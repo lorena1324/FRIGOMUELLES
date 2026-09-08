@@ -569,6 +569,7 @@ header, .header, .topbar {
       <div>
         <label for="noCarga">No. de carga <span class="req">*</span></label>
         <input type="text" id="noCarga" class="mono-input" placeholder="10692">
+      </div>
       <div>
         <label for="cliente">Cliente <span class="req">*</span></label>
         <select id="cliente">
@@ -700,8 +701,8 @@ header, .header, .topbar {
       <summary>¿Cómo obtener la URL?</summary>
       <ol>
         <li>Abre tu Google Sheets → Extensiones → Apps Script</li>
-        <li>Agrega una hoja llamada <b>CargueDescargue</b> con los encabezados de este formulario</li>
-        <li>Usa el script publicado para esta hoja</li>
+        <li>Usa el Apps Script corregido; la pestaña <b>CargueDescargue</b> se crea automáticamente</li>
+        <li>Ejecuta una vez la función <b>crearHoja</b> en Apps Script para comprobar la conexión</li>
         <li>Implementar → Nueva implementación → Tipo: Aplicación web → Acceso: Cualquier persona</li>
         <li>Copia la URL y pégala arriba</li>
       </ol>
@@ -1028,7 +1029,7 @@ header, .header, .topbar {
           body: JSON.stringify({
             hoja: 'CargueDescargue',
             ...r,
-            personas: r.personas.map(p => `${p.nombre} (${p.cedula})`).join('; ')
+            personas: r.personas
           })
         });
         // Con mode:no-cors el navegador no permite leer la respuesta del servidor.
