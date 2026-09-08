@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INLOTRANS · Control de Cargue y Descargue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* ---- núcleo de color: muelle logístico, noche de bodega, acento violeta-índigo ---- */
+    --ink-950:#151033;
+    --ink-900:#1c1640;
+    --indigo-800:#2c2166;
+    --indigo-700:#3c2a86;
+    --indigo-600:#5439c7;
+    --violet-500:#6a4ee0;
+    --violet-300:#a89af2;
+    --lilac-100:#efecfb;
+    --paper:#f5f2ec;
+    --paper-line:#e6e1d4;
+    --card-line:#e7e3f0;
+    --ink:#191623;
+    --ink-soft:#615c72;
+    --ink-faint:#918da3;
+    --ok-bg:#e2f3e6;
+    --ok-fg:#237a3f;
+    --bad-bg:#fbe7ea;
+    --bad-fg:#c53554;
+    --amber-bg:#fbedd9;
+    --amber-fg:#a8631a;
+    --amber:#c9781f;
+    --radius-lg:20px;
+    --radius:14px;
+    --radius-sm:10px;
+    --shadow:0 1px 2px rgba(28,22,64,.04), 0 12px 28px rgba(28,22,64,.07);
+    --shadow-soft:0 1px 2px rgba(28,22,64,.04), 0 4px 10px rgba(28,22,64,.05);
+    --font-display:'Space Grotesk',-apple-system,Helvetica,Arial,sans-serif;
+    --font-body:'Inter',-apple-system,Helvetica,Arial,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:980px;margin:0 auto;padding:0 0 90px;}
+
+  /* ---------- header ---------- */
+  header.top{
+    position:relative;
+    overflow:hidden;
+    background:linear-gradient(160deg,var(--ink-950) 0%,var(--indigo-800) 52%,var(--violet-500) 135%);
+    color:#fff;
+    padding:24px 18px 22px;
+  }
+  header.top::before{
+    content:"";
+    position:absolute; inset:0;
+    background-image:
+      linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+    background-size:26px 26px;
+    mask-image:radial-gradient(ellipse 100% 80% at 30% 0%, #000 40%, transparent 90%);
+    pointer-events:none;
+  }
+  header.top::after{
+    content:"";
+    position:absolute; right:-60px; top:-70px; width:220px; height:220px; border-radius:50%;
+    background:radial-gradient(circle at 30% 30%, rgba(168,154,242,.38), transparent 65%);
+    pointer-events:none;
+  }
+  .brandrow{position:relative;display:flex;align-items:center;gap:12px;max-width:720px;margin:0 auto;}
+  .badge{
+    width:46px;height:46px;border-radius:13px;
+    background:rgba(255,255,255,.14);
+    border:1px solid rgba(255,255,255,.22);
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .badge svg{width:24px;height:24px;}
+  .brandtext .eyebrow{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.1em;opacity:.72;font-weight:500;}
+  .brandtext h1{margin:3px 0 0;font-family:var(--font-display);font-size:20.5px;font-weight:700;letter-spacing:-.01em;line-height:1.15;}
+  .brandtext p{margin:4px 0 0;font-size:12.5px;opacity:.78;}
+  .chiprow{position:relative;display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;}
+  .chip{
+    display:inline-flex;align-items:center;gap:6px;
+    background:rgba(255,255,255,.1);
+    border:1px solid rgba(255,255,255,.2);
+    padding:6px 12px;border-radius:999px;
+    font-size:12.5px;font-weight:600;
+  }
+  .chip svg{width:13px;height:13px;flex-shrink:0;}
+  .chip.on{background:rgba(52,199,116,.22);border-color:rgba(52,199,116,.4);}
+  .chip.on .dotlive{width:6px;height:6px;border-radius:50%;background:#3fd67a;box-shadow:0 0 0 3px rgba(63,214,122,.25);}
+
+
+  .btn:focus-visible,.turno-tile:focus-visible,.optile:focus-visible,
+  .stepper button:focus-visible,.delbtn:focus-visible{
+    outline:3px solid rgba(106,78,224,.28);
+    outline-offset:2px;
+  }
+  .turno-tile:hover,.optile:hover{border-color:#cfc7e8;transform:translateY(-1px);}
+  .turno-tile,.optile{transition:transform .12s ease,border-color .12s ease,background .12s ease,box-shadow .12s ease;}
+  .rec{transition:box-shadow .15s ease,transform .15s ease;}
+  .rec:hover{box-shadow:var(--shadow-soft);transform:translateY(-1px);}
+
+  /* ---------- section headers ---------- */
+  .card{
+    background:#fff;
+    border:1px solid var(--card-line);
+    border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-soft);
+    margin:16px 16px 0;
+    padding:19px 18px 21px;
+  }
+  .shead{display:flex;align-items:flex-start;gap:11px;margin-bottom:16px;}
+  .sicon{
+    width:34px;height:34px;border-radius:10px;flex-shrink:0;
+    background:var(--lilac-100);color:var(--indigo-700);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .sicon svg{width:18px;height:18px;}
+  .shead h2{margin:0;font-family:var(--font-display);font-size:15.5px;font-weight:700;color:var(--ink-950);}
+  .shead p{margin:2px 0 0;font-size:12px;color:var(--ink-soft);}
+
+  label{display:block;font-size:12px;font-weight:600;color:#4b4759;margin-bottom:5px;}
+  label .req{color:var(--bad-fg);}
+  input[type=text],input[type=number],input[type=date],input[type=time],select,textarea{
+    width:100%;padding:10px 12px;border:1.5px solid #e2dff0;border-radius:10px;
+    font-size:14px;color:var(--ink);background:#fdfcfa;font-family:var(--font-body);
+  }
+  #despacho,.mono-input,#horaInicio,#horaFin{font-family:var(--font-mono);}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--violet-300);outline-offset:1px;border-color:var(--violet-500);background:#fff;}
+  textarea{resize:vertical;min-height:56px;}
+  .hint{margin-top:4px;font-size:11px;color:var(--ink-faint);}
+  .hint.warn{color:var(--amber-fg);}
+
+  .btn{
+    appearance:none;border:none;cursor:pointer;font-family:var(--font-body);font-weight:700;
+    font-size:13.5px;padding:12px 16px;border-radius:11px;transition:transform .05s ease, background .15s ease, box-shadow .15s ease;
+  }
+  .btn:active{transform:scale(.98);}
+  .btn-primary{background:linear-gradient(135deg,var(--indigo-700),var(--violet-500));color:#fff;width:100%;box-shadow:0 8px 20px rgba(84,57,199,.28);}
+  .btn-primary:hover{filter:brightness(1.05);}
+  .btn-ghost{background:#fff;color:var(--indigo-700);border:1.5px solid #d9d3ef;}
+  .btn-ghost:hover{background:var(--lilac-100);}
+  .btn[disabled]{opacity:.5;cursor:not-allowed;}
+
+  /* turno selector */
+  .turnos{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .turno-tile{
+    border:1.5px solid #e6e1f2;border-radius:var(--radius-sm);padding:12px 8px;
+    display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;
+    background:#fdfcfa;text-align:center;transition:border-color .12s ease, background .12s ease;
+  }
+  .turno-tile svg{width:17px;height:17px;color:var(--ink-faint);}
+  .turno-tile .t{font-size:12.5px;font-weight:700;color:var(--ink);}
+  .turno-tile .r{font-size:10.5px;color:var(--ink-faint);font-family:var(--font-mono);}
+  .turno-tile.sel{border-color:var(--ink-950);background:linear-gradient(150deg,var(--ink-950),var(--indigo-800));}
+  .turno-tile.sel svg,.turno-tile.sel .t{color:#fff;}
+  .turno-tile.sel .r{color:var(--violet-300);}
+
+  /* fgrid */
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .fgrid .full{grid-column:1/-1;}
+
+  /* operation type tiles */
+  .optiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+  .optile{
+    position:relative;border:1.5px solid #e6e1f2;border-radius:var(--radius-sm);
+    padding:14px 12px;cursor:pointer;background:#fdfcfa;text-align:left;transition:border-color .12s ease, background .12s ease;
+  }
+  .optile .oicon{
+    width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:9px;
+    background:#efedf5;color:#8b849e;
+  }
+  .optile .oicon svg{width:17px;height:17px;}
+  .optile .ot{font-size:13.5px;font-weight:700;color:var(--ink);}
+  .optile .osub{font-size:11px;color:var(--ink-faint);margin-top:1px;}
+  .optile .dot{
+    position:absolute;top:11px;right:11px;width:18px;height:18px;border-radius:50%;
+    border:1.5px solid #d9d5e6;display:flex;align-items:center;justify-content:center;
+  }
+  .optile .dot svg{width:11px;height:11px;opacity:0;}
+  .optile.cargue.sel{border-color:var(--ok-fg);background:linear-gradient(180deg,#fff,#f1faf3);box-shadow:0 0 0 3px rgba(35,122,63,.12);}
+  .optile.cargue.sel .oicon{background:var(--ok-bg);color:var(--ok-fg);}
+  .optile.cargue.sel .dot{border-color:var(--ok-fg);background:var(--ok-fg);}
+  .optile.cargue.sel .dot svg{opacity:1;color:#fff;}
+  .optile.descargue.sel{border-color:var(--bad-fg);background:linear-gradient(180deg,#fff,#fdf2f4);box-shadow:0 0 0 3px rgba(197,53,84,.12);}
+  .optile.descargue.sel .oicon{background:var(--bad-bg);color:var(--bad-fg);}
+  .optile.descargue.sel .dot{border-color:var(--bad-fg);background:var(--bad-fg);}
+  .optile.descargue.sel .dot svg{opacity:1;color:#fff;}
+
+  /* apartados independientes de cargue y descargue */
+  .apartado-op{
+    display:none;
+    border:1px solid var(--paper-line);
+    border-radius:var(--radius-sm);
+    padding:13px;
+    margin-bottom:10px;
+  }
+  .apartado-op.visible{display:block;}
+  .cargue-apartado{background:#f7fcf8;border-color:#cfe8d5;}
+  .descargue-apartado{background:#fff8f9;border-color:#efd1d7;}
+  .apartado-title{display:flex;align-items:flex-start;gap:9px;margin-bottom:11px;}
+  .apartado-title strong{font-size:13px;color:var(--ink);}
+  .apartado-badge{
+    width:25px;height:25px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:800;flex-shrink:0;
+  }
+  .cargue-badge{background:var(--ok-bg);color:var(--ok-fg);}
+  .descargue-badge{background:var(--bad-bg);color:var(--bad-fg);}
+
+  /* personnel rows */
+  .stepper{display:flex;align-items:center;gap:12px;}
+  .stepper button{
+    width:30px;height:30px;border-radius:8px;border:1.5px solid #e2dff0;background:#fff;
+    font-size:16px;font-weight:700;color:var(--indigo-700);cursor:pointer;line-height:1;
+  }
+  .stepper button:hover{background:var(--lilac-100);}
+  .stepper .n{font-family:var(--font-display);font-size:16px;font-weight:700;min-width:18px;text-align:center;}
+  .persona-row{
+    border:1px solid var(--paper-line);border-radius:var(--radius-sm);padding:12px;margin-top:10px;
+    background:#faf8f4;
+  }
+  .persona-row .plabel{font-size:11px;font-weight:700;color:var(--indigo-700);font-family:var(--font-mono);letter-spacing:.03em;margin-bottom:8px;}
+  .persona-fields{display:grid;grid-template-columns:1.3fr 1fr;gap:10px;}
+
+  /* connection panel */
+  #connPanel .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
+  #connPanel .row .grow{flex:1 1 260px;}
+  #connStatus{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;font-family:var(--font-mono);margin-top:12px;padding:9px 12px;border-radius:10px;background:var(--amber-bg);color:var(--amber-fg);}
+  #connStatus .dot2{width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 3px rgba(201,120,31,.15);flex-shrink:0;}
+  #connStatus.on{background:var(--ok-bg);color:var(--ok-fg);}
+  #connStatus.on .dot2{background:var(--ok-fg);box-shadow:0 0 0 3px rgba(35,122,63,.15);}
+  details.howto{margin-top:10px;font-size:12px;color:var(--ink-soft);}
+  details.howto summary{cursor:pointer;color:var(--indigo-700);font-weight:600;}
+  details.howto ol{margin:8px 0 0 18px;padding:0;}
+  details.howto li{margin-bottom:4px;}
+
+  /* stats */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 16px 0;}
+  .stat{
+    background:#fff;border:1px solid var(--card-line);border-radius:var(--radius-sm);
+    padding:13px 8px;box-shadow:var(--shadow-soft);text-align:center;
+  }
+  .stat .n{font-family:var(--font-display);font-size:21px;font-weight:700;color:var(--ink-950);}
+  .stat .lbl{font-size:9.5px;color:var(--ink-faint);letter-spacing:.02em;font-weight:600;margin-top:2px;line-height:1.3;}
+
+  /* filters */
+  .filters{display:flex;gap:8px;margin-bottom:12px;}
+  .filters select{width:auto;flex:1;font-size:12.5px;padding:8px 9px;}
+
+  /* records as cards */
+  .rec{
+    border:1px solid var(--paper-line);border-radius:var(--radius-sm);padding:13px 14px;margin-bottom:9px;
+    background:#fff;
+  }
+  .rec-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:9px;}
+  .rec-id{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .rec-no{font-family:var(--font-mono);font-weight:700;font-size:13px;color:var(--ink-950);}
+  .rec-cliente{font-size:12.5px;color:var(--ink-soft);}
+  .pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px 3px 7px;border-radius:999px;font-size:11px;font-weight:700;flex-shrink:0;}
+  .pill svg{width:10px;height:10px;}
+  .pill-ok{background:var(--ok-bg);color:var(--ok-fg);}
+  .pill-bad{background:var(--bad-bg);color:var(--bad-fg);}
+  .pill-sync{background:var(--amber-bg);color:var(--amber-fg);}
+  .pill-synced{background:var(--ok-bg);color:var(--ok-fg);}
+  .rec-meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;}
+  .rec-meta b{color:var(--ink);font-weight:600;}
+  .rec-personas{display:flex;flex-wrap:wrap;gap:6px;}
+  .persona-chip{
+    background:var(--lilac-100);color:var(--indigo-800);font-family:var(--font-mono);
+    font-size:10.5px;padding:3px 8px;border-radius:999px;
+  }
+  .rec-foot{display:flex;justify-content:flex-end;margin-top:6px;}
+  .delbtn{background:none;border:none;color:var(--bad-fg);cursor:pointer;font-size:12px;font-weight:700;padding:3px 8px;border-radius:6px;}
+  .delbtn:hover{background:var(--bad-bg);}
+  .empty{padding:34px 14px;text-align:center;color:var(--ink-faint);font-size:13px;}
+
+  .footerbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap;}
+  .synctxt{font-size:11.5px;color:var(--ink-soft);font-family:var(--font-mono);}
+
+  .toast{
+    position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+    background:var(--ink-950);color:#fff;padding:11px 18px;border-radius:999px;
+    font-size:13px;font-weight:600;box-shadow:0 10px 26px rgba(21,16,51,.32);
+    opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;
+    z-index:50;max-width:88vw;text-align:center;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
+
+  @media (max-width:420px){
+    .fgrid{grid-template-columns:1fr;}
+    .persona-fields{grid-template-columns:1fr;}
+    .stats{grid-template-columns:repeat(2,1fr);}
+  }
+
+/* ===== Diseño responsive: celular, tablet y PC ===== */
+* { box-sizing: border-box; }
+html { width: 100%; overflow-x: hidden; }
+body {
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+.container, main, .container-fluid {
+  width: min(100%, 1200px);
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+input, select, textarea, button {
+  max-width: 100%;
+  font-size: 16px; /* evita zoom automático en iPhone */
+}
+img, svg, video, canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Grillas flexibles */
+.grid, .form-grid, .fields, .row {
+  min-width: 0;
+}
+.form-grid, .fields {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+}
+.cards, .operations, .op-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+}
+
+/* Botones cómodos para táctil */
+button, .btn, .tile, .operation-card {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+/* Tablas: nunca rompen la pantalla */
+.table-wrap, .table-responsive, .records-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+table {
+  width: 100%;
+  min-width: 700px;
+}
+
+/* Encabezados y títulos */
+h1, h2, h3, .title {
+  overflow-wrap: anywhere;
+}
+header, .header, .topbar {
+  flex-wrap: wrap;
+}
+
+/* Teléfonos */
+@media (max-width: 600px) {
+  body { font-size: 14px; }
+  .container, main {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+  header, .header, .topbar {
+    gap: 10px;
+    padding: 12px !important;
+  }
+  h1 { font-size: 1.35rem !important; line-height: 1.2; }
+  h2 { font-size: 1.1rem !important; }
+  h3 { font-size: 1rem !important; }
+
+  .form-grid, .fields, .grid, .cards, .operations, .op-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .apartado-op {
+    padding: 12px !important;
+    margin-top: 10px !important;
+  }
+
+  .apartado-op .grid,
+  .apartado-op .form-grid,
+  .apartado-op .fields {
+    grid-template-columns: 1fr !important;
+  }
+
+  input, select, textarea {
+    width: 100% !important;
+    min-height: 44px;
+  }
+
+  textarea { min-height: 90px; }
+
+  button, .btn {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  /* Si hay grupos de botones, se apilan */
+  .actions, .button-row, .btn-row {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .operation-selector, .operation-tiles {
+    grid-template-columns: 1fr !important;
+  }
+
+  .table-wrap, .table-responsive, .records-wrap {
+    margin-left: -2px;
+    width: calc(100% + 4px);
+  }
+
+  table { font-size: 12px; }
+}
+
+/* Tablets */
+@media (min-width: 601px) and (max-width: 1024px) {
+  .container, main {
+    padding-left: 18px !important;
+    padding-right: 18px !important;
+  }
+  .form-grid, .fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Pantallas grandes */
+@media (min-width: 1200px) {
+  .container, main {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+/* Modo táctil: mayor espacio sin alterar PC */
+@media (pointer: coarse) {
+  label { line-height: 1.35; }
+  input, select, button { min-height: 44px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brandrow">
+    <div class="badge">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2v20M12 2l-3.5 2M12 2l3.5 2M12 22l-3.5-2M12 22l3.5-2M2 7l3.5 2M2 7v6M2 7l3.5-2M2 13l3.5 2M2 13l3.5-2M22 7l-3.5 2M22 7v6M22 7l-3.5-2M22 13l-3.5 2M22 13l-3.5-2M5.5 9v6M18.5 9v6M8.5 8l-6.5-1M8.5 8v0M15.5 8l6.5-1M8.5 16l-6.5 1M15.5 16l6.5 1" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="brandtext">
+      <div class="eyebrow">INLOTRANS · MUELLES LOGÍSTICO</div>
+      <h1>Control de cargue y descargue</h1>
+      <p id="fechaLabel">Registro por carga · turno actual</p>
+    </div>
+  </div>
+  <div class="chiprow">
+    <span class="chip" id="chipTurno">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="#fff" stroke-width="1.6"/><path d="M12 7v5l3 2" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>
+      Sin turno
+    </span>
+    <span class="chip" id="chipSheets">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="3" width="16" height="18" rx="2" stroke="#fff" stroke-width="1.6"/><path d="M8 8h8M8 12h8M8 16h5" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>
+      Local
+    </span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- Turno activo -->
+  <section class="card">
+    <div class="shead">
+      <div class="sicon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      </div>
+      <div>
+        <h2>Turno activo</h2>
+        <p>Selecciona el turno en el que estás registrando</p>
+      </div>
+    </div>
+    <div class="turnos" id="turnos">
+      <div class="turno-tile" data-turno="1" data-rango="6:00-14:00">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.7"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <span class="t">Turno 1</span><span class="r">6:00–14:00</span>
+      </div>
+      <div class="turno-tile" data-turno="2" data-rango="14:00-22:00">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 17h16M6 17c0-3.5 2.5-7 6-7s6 3.5 6 7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 3v2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <span class="t">Turno 2</span><span class="r">14:00–22:00</span>
+      </div>
+      <div class="turno-tile" data-turno="3" data-rango="22:00-06:00">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.4 6.4 0 0 0 10.5 10.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        <span class="t">Turno 3</span><span class="r">22:00–6:00</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Datos del turno -->
+  <section class="card">
+    <div class="shead">
+      <div class="sicon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/>
+          <path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div>
+        <h2>Datos del turno</h2>
+        <p>Fecha y número de despacho del registro</p>
+      </div>
+    </div>
+    <div class="fgrid">
+      <div>
+        <label for="fecha">Fecha <span class="req">*</span></label>
+        <input type="date" id="fecha">
+      </div>
+      <div>
+        <label for="despacho">N.° de despacho <span class="req">*</span></label>
+        <input type="text" id="despacho" class="mono-input" inputmode="numeric" placeholder="Ej. 00452">
+      </div>
+    </div>
+  </section>
+
+  <!-- Nueva carga -->
+  <section class="card">
+    <div class="shead">
+      <div class="sicon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="7" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 7V5.5A2.5 2.5 0 0 1 10.5 3h3A2.5 2.5 0 0 1 16 5.5V7" stroke="currentColor" stroke-width="1.7"/></svg>
+      </div>
+      <div>
+        <h2>Nueva carga</h2>
+        <p>Completa los datos y agrégala a la lista</p>
+      </div>
+    </div>
+
+    <label style="margin-bottom:8px;">Tipo de operación <span class="req">*</span></label>
+    <div class="optiles">
+      <button type="button" class="optile cargue" id="tileCargue" aria-pressed="false">
+        <span class="dot"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 13l4 4 10-10" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span class="oicon">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 19V5M12 5l-6 6M12 5l6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <div class="ot">Cargue</div>
+        <div class="osub">Se registra primero</div>
+      </button>
+      <button type="button" class="optile descargue" id="tileDescargue" aria-pressed="false">
+        <span class="dot"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 13l4 4 10-10" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span class="oicon">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 5v14M12 19l-6-6M12 19l6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <div class="ot">Descargue</div>
+        <div class="osub">Se registra después</div>
+      </button>
+    </div>
+    <div class="hint">Puedes seleccionar Cargue, Descargue o ambos. Si seleccionas ambos, se guardan como dos apartados independientes: primero cargue y luego descargue.</div>
+
+    <div class="fgrid" style="margin-top:14px;">
+      <div>
+        <label for="noCarga">No. de carga <span class="req">*</span></label>
+        <input type="text" id="noCarga" class="mono-input" placeholder="10692">
+      <div>
+        <label for="cliente">Cliente <span class="req">*</span></label>
+        <select id="cliente">
+          <option value="">Selecciona...</option>
+          <option>Ovo Producto</option>
+          <option>W y L</option>
+          <option>Costa Dorada</option>
+          <option>Atlantic</option>
+          <option>NUSA</option>
+          <option>SWA</option>
+          <option>Avsa</option>
+          <option>Nasara</option>
+          <option>Repremundo</option>
+          <option>I Blu Bueguer</option>
+          <option>Gaseosas Lux</option>
+          <option>Otro</option>
+        </select>
+      </div>
+      <div>
+        <label for="tipoVeh">Tipo de vehículo <span class="req">*</span></label>
+        <select id="tipoVeh">
+          <option value="">Selecciona...</option>
+          <option>Sencillo</option>
+          <option>Turbo</option>
+          <option>Doble troque</option>
+          <option>Mula</option>
+          <option>NHR</option>
+        </select>
+      </div>
+      <div>
+        <label for="tipoCarga">Tipo de carga <span class="req">*</span></label>
+        <select id="tipoCarga">
+          <option value="">Selecciona...</option>
+          <option>Caja</option>
+          <option>Contenedor</option>
+          <option>Canastilla</option>
+          <option>Lona</option>
+          <option>Canasta</option>
+          <option>Estiba</option>
+          <option>Canecas</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="apartados" style="margin-top:16px;">
+      <div class="apartado-op cargue-apartado" id="apartadoCargue">
+        <div class="apartado-title">
+          <span class="apartado-badge cargue-badge">1</span>
+          <div>
+            <strong>Apartado de cargue</strong>
+            <div class="hint">Registra primero el horario del cargue.</div>
+          </div>
+        </div>
+        <div class="fgrid">
+          <div>
+            <label for="cargueInicio">Hora de inicio <span class="req">*</span></label>
+            <input type="time" id="cargueInicio">
+          </div>
+          <div>
+            <label for="cargueFin">Hora de fin <span class="req">*</span></label>
+            <input type="time" id="cargueFin">
+          </div>
+        </div>
+      </div>
+
+      <div class="apartado-op descargue-apartado" id="apartadoDescargue">
+        <div class="apartado-title">
+          <span class="apartado-badge descargue-badge">2</span>
+          <div>
+            <strong>Apartado de descargue</strong>
+            <div class="hint">Registra después el horario del descargue.</div>
+          </div>
+        </div>
+        <div class="fgrid">
+          <div>
+            <label for="descargueInicio">Hora de inicio <span class="req">*</span></label>
+            <input type="time" id="descargueInicio">
+          </div>
+          <div>
+            <label for="descargueFin">Hora de fin <span class="req">*</span></label>
+            <input type="time" id="descargueFin">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <label style="margin-bottom:0;">Personal operativo <span class="req">*</span></label>
+        <div class="stepper">
+          <button type="button" id="pMinus">−</button>
+          <span class="n" id="pCount">1</span>
+          <button type="button" id="pPlus">+</button>
+        </div>
+      </div>
+      <div id="personasWrap"></div>
+    </div>
+
+    <div class="fgrid" style="margin-top:14px;">
+      <div class="full">
+        <label for="observaciones">Observaciones</label>
+        <input type="text" id="observaciones" placeholder="Novedades de esta carga (opcional)">
+      </div>
+    </div>
+
+    <button class="btn btn-ghost" id="btnAdd" style="margin-top:14px;width:100%;">+ Agregar carga a la lista</button>
+  </section>
+
+  <!-- Google Sheets -->
+  <section class="card" id="connPanel">
+    <div class="shead">
+      <div class="sicon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="3" width="16" height="18" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 8h8M8 12h8M8 16h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      </div>
+      <div>
+        <h2>Conexión a Google Sheets</h2>
+        <p>Opcional · sincronización de registros</p>
+      </div>
+    </div>
+    <div class="row">
+      <div class="grow">
+        <label for="sheetUrl">URL del Web App (Apps Script)</label>
+        <input type="text" id="sheetUrl" placeholder="https://script.google.com/macros/s/AKfycb.../exec">
+      </div>
+      <button class="btn btn-primary" style="width:auto;" id="btnConnect">Conectar</button>
+    </div>
+    <div id="connStatus"><span class="dot2"></span><span id="connLabel">Trabajando en local (sin sincronizar)</span></div>
+    <details class="howto">
+      <summary>¿Cómo obtener la URL?</summary>
+      <ol>
+        <li>Abre tu Google Sheets → Extensiones → Apps Script</li>
+        <li>Agrega una hoja llamada <b>CargueDescargue</b> con los encabezados de este formulario</li>
+        <li>Usa el script publicado para esta hoja</li>
+        <li>Implementar → Nueva implementación → Tipo: Aplicación web → Acceso: Cualquier persona</li>
+        <li>Copia la URL y pégala arriba</li>
+      </ol>
+    </details>
+  </section>
+
+  <button class="btn btn-primary" id="btnSave" style="margin:16px 16px 0;width:calc(100% - 32px);">Guardar y sincronizar</button>
+
+  <!-- stats -->
+  <div class="stats">
+    <div class="stat"><div class="n" id="statTotal">0</div><div class="lbl">Registros</div></div>
+    <div class="stat"><div class="n" id="statSync">0</div><div class="lbl">Sincronizados</div></div>
+    <div class="stat"><div class="n" id="statPersonas">0</div><div class="lbl">Personas hoy</div></div>
+    <div class="stat"><div class="n" id="statPend">0</div><div class="lbl">Sin sincronizar</div></div>
+  </div>
+
+  <!-- records -->
+  <section class="card">
+    <div class="shead">
+      <div class="sicon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      </div>
+      <div>
+        <h2>Registros del día</h2>
+        <p>Historial de cargas y descargues de este turno</p>
+      </div>
+    </div>
+    <div class="filters">
+      <select id="filtOp"><option value="">Todas las operaciones</option><option>Cargue</option><option>Descargue</option></select>
+      <select id="filtCliente"><option value="">Todos los clientes</option></select>
+    </div>
+    <div id="records"></div>
+    <div class="footerbar">
+      <span class="synctxt" id="syncTxt">0 registros</span>
+      <button class="btn btn-ghost" id="btnClear">Vaciar lista</button>
+    </div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const todayISO = () => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+  $('fecha').value = todayISO();
+
+  const cargueIcon = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 19V5M12 5l-6 6M12 5l6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const descargueIcon = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 5v14M12 19l-6-6M12 19l6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  let operaciones = new Set(); // permite Cargue, Descargue o ambos
+  let turno = null;             // {num, rango}
+  let numPersonas = 1;
+  let rows = JSON.parse(localStorage.getItem('icd_rows_v3') || '[]');
+  let sheetUrl = localStorage.getItem('icd_sheet_url') || '';
+
+  if (sheetUrl) { $('sheetUrl').value = sheetUrl; setConnected(true); }
+
+  // Conserva únicamente el número de despacho durante el turno.
+  $('despacho').value = localStorage.getItem('icd_despacho') || '';
+  $('despacho').addEventListener('input', () => {
+    localStorage.setItem('icd_despacho', $('despacho').value.trim());
+  });
+
+  // ---- turno ----
+  document.querySelectorAll('.turno-tile').forEach(tile => {
+    tile.addEventListener('click', () => {
+      document.querySelectorAll('.turno-tile').forEach(t => t.classList.remove('sel'));
+      tile.classList.add('sel');
+      turno = { num: tile.dataset.turno, rango: tile.dataset.rango };
+      $('chipTurno').innerHTML = $('chipTurno').querySelector('svg').outerHTML + ' Turno ' + turno.num + ' · ' + turno.rango;
+    });
+  });
+
+  // ---- operación múltiple ----
+  function setOp(v){
+    if (v === null || v === undefined) {
+      operaciones.clear();
+    } else if (operaciones.has(v)) {
+      operaciones.delete(v);
+    } else {
+      operaciones.add(v);
+    }
+
+    const cargueSel = operaciones.has('Cargue');
+    const descargueSel = operaciones.has('Descargue');
+
+    $('tileCargue').classList.toggle('sel', cargueSel);
+    $('tileDescargue').classList.toggle('sel', descargueSel);
+    $('tileCargue').setAttribute('aria-pressed', cargueSel ? 'true' : 'false');
+    $('tileDescargue').setAttribute('aria-pressed', descargueSel ? 'true' : 'false');
+
+    $('apartadoCargue').classList.toggle('visible', cargueSel);
+    $('apartadoDescargue').classList.toggle('visible', descargueSel);
+  }
+
+  $('tileCargue').addEventListener('click', e => {
+    e.preventDefault();
+    setOp('Cargue');
+  });
+
+  $('tileDescargue').addEventListener('click', e => {
+    e.preventDefault();
+    setOp('Descargue');
+  });
+
+  function validarHorario(idInicio, idFin, nombre){
+    const inicio = $(idInicio).value;
+    const fin = $(idFin).value;
+    if (!inicio || !fin) {
+      toast(`Completa la hora de inicio y fin del ${nombre.toLowerCase()}`);
+      return false;
+    }
+    if (fin <= inicio) {
+      toast(`La hora de fin del ${nombre.toLowerCase()} debe ser posterior a la de inicio`);
+      return false;
+    }
+    return true;
+  }
+
+  // ---- personnel stepper ----
+  function renderPersonas(){
+    const wrap = $('personasWrap');
+    const existing = wrap.querySelectorAll('.persona-row');
+    // preserve values already typed when count changes
+    const prevVals = Array.from(existing).map(r => ({
+      nombre: r.querySelector('.p-nombre').value,
+      cedula: r.querySelector('.p-cedula').value
+    }));
+    wrap.innerHTML = '';
+    for (let i = 0; i < numPersonas; i++){
+      const v = prevVals[i] || { nombre:'', cedula:'' };
+      const row = document.createElement('div');
+      row.className = 'persona-row';
+      row.innerHTML = `
+        <div class="plabel">PERSONA ${i+1}</div>
+        <div class="persona-fields">
+          <div>
+            <label>Nombre <span class="req">*</span></label>
+            <input type="text" class="p-nombre" placeholder="Nombre completo" value="${escAttr(v.nombre)}">
+          </div>
+          <div>
+            <label>Cédula <span class="req">*</span></label>
+            <input type="text" class="p-cedula mono-input" inputmode="numeric" placeholder="N.° cédula" value="${escAttr(v.cedula)}">
+          </div>
+        </div>`;
+      wrap.appendChild(row);
+    }
+    $('pCount').textContent = numPersonas;
+  }
+  $('pMinus').addEventListener('click', () => { if (numPersonas > 1){ numPersonas--; renderPersonas(); } });
+  $('pPlus').addEventListener('click', () => { if (numPersonas < 12){ numPersonas++; renderPersonas(); } });
+  renderPersonas();
+  setOp(null);
+
+  // ---- google sheets connection ----
+  function setConnected(on){
+    $('connStatus').classList.toggle('on', on);
+    $('connLabel').textContent = on ? 'Conectado a Google Sheets' : 'Trabajando en local (sin sincronizar)';
+    $('btnConnect').textContent = on ? 'Cambiar' : 'Conectar';
+    $('chipSheets').classList.toggle('on', on);
+    $('chipSheets').innerHTML = $('chipSheets').querySelector('svg').outerHTML + (on ? ' Google Sheets' : ' Local');
+  }
+  $('btnConnect').addEventListener('click', () => {
+    const v = $('sheetUrl').value.trim();
+    if (!v) { toast('Pega la URL del Web App primero'); return; }
+    sheetUrl = v;
+    localStorage.setItem('icd_sheet_url', v);
+    setConnected(true);
+    toast('Conectado. Los próximos guardados se sincronizarán.');
+  });
+
+  function toast(msg){
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._h);
+    t._h = setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  // ---- add carga ----
+  $('btnAdd').addEventListener('click', () => {
+    if ($('btnAdd').disabled) return;
+
+    const noCarga = $('noCarga').value.trim();
+    const cliente = $('cliente').value;
+    const tipoVeh = $('tipoVeh').value;
+    const tipoCarga = $('tipoCarga').value;
+    const despacho = $('despacho').value.trim();
+
+    if (!$('fecha').value) { toast('Selecciona la fecha'); return; }
+    if (!despacho) { toast('Ingresa el número de despacho'); return; }
+    if (!noCarga || !cliente || !tipoVeh || !tipoCarga || operaciones.size === 0) {
+      toast('Completa los campos obligatorios (*) y selecciona la operación');
+      return;
+    }
+
+    if (operaciones.has('Cargue') && !validarHorario('cargueInicio', 'cargueFin', 'cargue')) return;
+    if (operaciones.has('Descargue') && !validarHorario('descargueInicio', 'descargueFin', 'descargue')) return;
+
+    const personas = Array.from(document.querySelectorAll('.persona-row')).map(r => ({
+      nombre: r.querySelector('.p-nombre').value.trim(),
+      cedula: r.querySelector('.p-cedula').value.trim()
+    }));
+
+    if (personas.some(p => !p.nombre || !p.cedula)) {
+      toast('Completa nombre y cédula de cada persona');
+      return;
+    }
+    if (personas.some(p => !/^\d{4,12}$/.test(p.cedula))) {
+      toast('La cédula debe ser solo números');
+      return;
+    }
+
+    const base = {
+      fecha: $('fecha').value || todayISO(),
+      turno: turno ? `Turno ${turno.num} (${turno.rango})` : '',
+      despacho,
+      noCarga, cliente, tipoVeh, tipoCarga,
+      personas,
+      observaciones: $('observaciones').value.trim(),
+      synced: false
+    };
+
+    // Guardamos la selección antes de limpiar el formulario.
+    const operacionesAgregadas = Array.from(operaciones);
+
+    // Siempre se agrega primero Cargue y luego Descargue.
+    if (operaciones.has('Cargue')) {
+      rows.push({
+        ...base,
+        operacion: 'Cargue',
+        horaInicio: $('cargueInicio').value,
+        horaFin: $('cargueFin').value
+      });
+    }
+
+    if (operaciones.has('Descargue')) {
+      rows.push({
+        ...base,
+        operacion: 'Descargue',
+        horaInicio: $('descargueInicio').value,
+        horaFin: $('descargueFin').value
+      });
+    }
+
+    localStorage.setItem('icd_rows_v3', JSON.stringify(rows));
+
+    $('btnAdd').disabled = true;
+    setTimeout(() => { $('btnAdd').disabled = false; }, 350);
+
+    $('noCarga').value = '';
+    $('cliente').value = '';
+    $('tipoVeh').value = '';
+    $('tipoCarga').value = '';
+    $('cargueInicio').value = '';
+    $('cargueFin').value = '';
+    $('descargueInicio').value = '';
+    $('descargueFin').value = '';
+    $('observaciones').value = '';
+    operaciones.clear();
+    $('tileCargue').classList.remove('sel');
+    $('tileDescargue').classList.remove('sel');
+    $('tileCargue').setAttribute('aria-pressed', 'false');
+    $('tileDescargue').setAttribute('aria-pressed', 'false');
+    $('apartadoCargue').classList.remove('visible');
+    $('apartadoDescargue').classList.remove('visible');
+    numPersonas = 1;
+    renderPersonas();
+
+    populateClienteFilter();
+    render();
+    toast(
+      operacionesAgregadas.length === 2
+        ? 'Cargue y descargue agregados correctamente'
+        : `${operacionesAgregadas[0]} agregado correctamente`
+    );
+  });
+
+  $('btnClear').addEventListener('click', () => {
+    if (!rows.length) return;
+    if (!confirm('¿Vaciar todos los registros guardados en este dispositivo? Esta acción no se puede deshacer.')) return;
+    rows = [];
+    localStorage.setItem('icd_rows_v3', JSON.stringify(rows));
+    populateClienteFilter();
+    render();
+  });
+
+  $('records').addEventListener('click', (e) => {
+    const btn = e.target.closest('.delbtn');
+    if (!btn) return;
+    const idx = Number(btn.dataset.idx);
+    rows.splice(idx, 1);
+    localStorage.setItem('icd_rows_v3', JSON.stringify(rows));
+    populateClienteFilter();
+    render();
+  });
+
+  $('filtOp').addEventListener('change', render);
+  $('filtCliente').addEventListener('change', render);
+
+  // ---- save & sync ----
+  $('btnSave').addEventListener('click', async () => {
+    if (!rows.length) { toast('No hay registros para guardar'); return; }
+    if (!sheetUrl) { toast('Guardado en local. Conecta Google Sheets para sincronizar.'); return; }
+    const pending = rows.filter(r => !r.synced);
+    if (!pending.length) { toast('Todo ya está sincronizado'); return; }
+
+    $('btnSave').disabled = true;
+    $('btnSave').textContent = 'Sincronizando...';
+    try {
+      for (const r of pending) {
+        await fetch(sheetUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {'Content-Type': 'text/plain;charset=utf-8'},
+          body: JSON.stringify({
+            hoja: 'CargueDescargue',
+            ...r,
+            personas: r.personas.map(p => `${p.nombre} (${p.cedula})`).join('; ')
+          })
+        });
+        // Con mode:no-cors el navegador no permite leer la respuesta del servidor.
+        // Se marca como enviado; el Apps Script debe guardar el POST recibido.
+        r.synced = true;
+      }
+      localStorage.setItem('icd_rows_v3', JSON.stringify(rows));
+      toast(`${pending.length} registro(s) enviado(s) a Google Sheets`);
+    } catch (err) {
+      toast('Error al sincronizar. Se guardó en local.');
+    } finally {
+      $('btnSave').disabled = false;
+      $('btnSave').textContent = 'Guardar y sincronizar';
+      render();
+    }
+  });
+
+  // ---- render ----
+  function populateClienteFilter(){
+    const sel = $('filtCliente');
+    const current = sel.value;
+    const clientes = Array.from(new Set(rows.map(r => r.cliente))).sort();
+    sel.innerHTML = '<option value="">Todos los clientes</option>' + clientes.map(c => `<option ${c===current?'selected':''}>${esc(c)}</option>`).join('');
+  }
+
+  function render(){
+    const filtOp = $('filtOp').value;
+    const filtCliente = $('filtCliente').value;
+    const filtered = rows
+      .map((r, i) => ({ r, i }))
+      .filter(({r}) => (!filtOp || r.operacion === filtOp) && (!filtCliente || r.cliente === filtCliente));
+
+    const wrap = $('records');
+    if (!filtered.length) {
+      wrap.innerHTML = `<div class="empty">${rows.length ? 'Ningún registro coincide con el filtro.' : 'Sin registros aún — agrega la primera carga arriba.'}</div>`;
+    } else {
+      wrap.innerHTML = filtered.slice().reverse().map(({r, i}) => `
+        <div class="rec">
+          <div class="rec-top">
+            <div class="rec-id">
+              <span class="rec-no">#${esc(r.noCarga)}</span>
+              <span class="rec-cliente">${esc(r.cliente)}</span>
+              <span class="pill ${r.operacion === 'Cargue' ? 'pill-ok' : 'pill-bad'}">${r.operacion === 'Cargue' ? cargueIcon : descargueIcon}${r.operacion}</span>
+            </div>
+            <span class="pill ${r.synced ? 'pill-synced' : 'pill-sync'}">${r.synced ? 'Sincronizado' : 'Pendiente'}</span>
+          </div>
+          <div class="rec-meta">
+            <span><b>${esc(r.tipoVeh)}</b></span>
+            <span>${esc(r.tipoCarga)}</span>
+            <span>${esc(r.horaInicio) || '—'}–${esc(r.horaFin) || '—'}</span>
+            ${r.turno ? `<span>${esc(r.turno)}</span>` : ''}
+          </div>
+          <div class="rec-personas">
+            ${r.personas.map(p => `<span class="persona-chip">${esc(p.nombre)} · ${esc(p.cedula)}</span>`).join('')}
+          </div>
+          ${r.observaciones ? `<div class="rec-meta" style="margin-top:6px;">${esc(r.observaciones)}</div>` : ''}
+          <div class="rec-foot"><button class="delbtn" data-idx="${i}">Eliminar</button></div>
+        </div>
+      `).join('');
+    }
+
+    $('statTotal').textContent = rows.length;
+    $('statSync').textContent = rows.filter(r => r.synced).length;
+    $('statPend').textContent = rows.filter(r => !r.synced).length;
+    $('statPersonas').textContent = rows.reduce((sum, r) => sum + r.personas.length, 0);
+    $('syncTxt').textContent = sheetUrl
+      ? (rows.filter(r=>!r.synced).length ? `${rows.filter(r=>!r.synced).length} sin sincronizar` : 'Todo sincronizado')
+      : `${rows.length} registro(s) guardados en local`;
+  }
+
+  function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function escAttr(s){ return esc(s); }
+
+  populateClienteFilter();
+  render();
+})();
+</script>
+
+</body>
+</html>
