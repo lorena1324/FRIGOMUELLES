@@ -231,6 +231,11 @@
   }
   .persona-row .plabel{font-size:11px;font-weight:700;color:var(--indigo-700);font-family:var(--font-mono);letter-spacing:.03em;margin-bottom:8px;}
   .persona-fields{display:grid;grid-template-columns:1.3fr 1fr;gap:10px;}
+  .cedula-wrap{position:relative;}
+  .cedula-status{margin-top:5px;font-size:10.5px;font-weight:600;min-height:15px;}
+  .cedula-status.ok{color:var(--ok-fg);}
+  .cedula-status.warn{color:var(--amber-fg);}
+  .p-nombre.autofilled{background:#f1faf3;border-color:#b9dfc2;font-weight:600;}
 
   /* connection panel */
   #connPanel .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
@@ -670,7 +675,7 @@ header, .header, .topbar {
 
     <div class="fgrid" style="margin-top:14px;">
       <div class="full">
-        <label for="observaciones">Observaciones</label>
+        <label for="observaciones">Observaiciones</label>
         <input type="text" id="observaciones" placeholder="Novedades de esta carga (opcional)">
       </div>
     </div>
@@ -830,6 +835,82 @@ header, .header, .topbar {
     return true;
   }
 
+  // ---- base de datos de personal ----
+  // Cédulas normalizadas: se guardan SIN puntos. También se aceptan
+  // entradas con puntos, espacios o guiones porque se limpian automáticamente.
+  const BD_PERSONAL = {
+    ('1106897655', 'SOLANO FARFAN JARRYNS0N SMITH'): ('1106897655', 'SOLANO FARFAN JARRYNS0N SMITH'),
+    ('1070954659', 'ZAMBRANO GUARNIZO DIEGO ARMANDO'): ('1070954659', 'ZAMBRANO GUARNIZO DIEGO ARMANDO'),
+    ('1074344615', 'BARAJAS LOPEZ CRISTIAN DAVID'): ('1074344615', 'BARAJAS LOPEZ CRISTIAN DAVID'),
+    ('1073252605', 'LA ROTA OROZCO DIEGO ENRIQUE'): ('1073252605', 'LA ROTA OROZCO DIEGO ENRIQUE'),
+    ('1193045035', 'MUEGUES MEJIA CARLOS ANDRES'): ('1193045035', 'MUEGUES MEJIA CARLOS ANDRES'),
+    ('1066270247', 'ORTIZ ROMERO ANDRES CAMILO'): ('1066270247', 'ORTIZ ROMERO ANDRES CAMILO'),
+    ('1003377551', 'PADILLA BELENO WALTER JUNIOR'): ('1003377551', 'PADILLA BELENO WALTER JUNIOR'),
+    ('1082845477', 'CAMARGO CARREÑO JUAN RAFAEL'): ('1082845477', 'CAMARGO CARREÑO JUAN RAFAEL'),
+    ('1052525109', 'CARDEÑO RIVERA ALBERT JOSE'): ('1052525109', 'CARDEÑO RIVERA ALBERT JOSE'),
+    ('1070916207', 'CASTRO CASTRO JUAN SEBASTIAN'): ('1070916207', 'CASTRO CASTRO JUAN SEBASTIAN'),
+    ('1016028468', 'SUAREZ CASTAÑEDA CRISTIAN CAMILO'): ('1016028468', 'SUAREZ CASTAÑEDA CRISTIAN CAMILO'),
+    ('1033098562', 'SILVA BAQUERO DANIEL FELIPE'): ('1033098562', 'SILVA BAQUERO DANIEL FELIPE'),
+    ('1233926818', 'MARTINEZ LOPEZ JOSE ALBERTO'): ('1233926818', 'MARTINEZ LOPEZ JOSE ALBERTO'),
+    ('1067964056', 'OSORIO CABRERA JOSE DAVID'): ('1067964056', 'OSORIO CABRERA JOSE DAVID'),
+    ('80065438', 'MENDOZA JOYA NELSON LEONEL'): ('80065438', 'MENDOZA JOYA NELSON LEONEL'),
+    ('1070965003', 'GUTIERREZ RAMIREZ JORGE LUIS'): ('1070965003', 'GUTIERREZ RAMIREZ JORGE LUIS'),
+    ('1074189285', 'TAFUR GUTIERREZ EDISON DUVAN'): ('1074189285', 'TAFUR GUTIERREZ EDISON DUVAN'),
+    ('79408877', 'REYES QUINTERO LUIS FERNANDO'): ('79408877', 'REYES QUINTERO LUIS FERNANDO'),
+    ('1028480351', 'VANEGAS ALONSO MIGUEL ANGEL'): ('1028480351', 'VANEGAS ALONSO MIGUEL ANGEL'),
+    ('1007805167', 'GOMEZ HERNANDEZ EMERSON SMITH'): ('1007805167', 'GOMEZ HERNANDEZ EMERSON SMITH'),
+    ('79730847', 'MARIÑO MARTINES JOSE FRANCISCO'): ('79730847', 'MARIÑO MARTINES JOSE FRANCISCO'),
+    ('1043646200', 'MENDOZA BELTRAN DIEGO DE JESUS'): ('1043646200', 'MENDOZA BELTRAN DIEGO DE JESUS'),
+    ('1049944790', 'PEREZ HERNANDEZ LUIS FELIPE'): ('1049944790', 'PEREZ HERNANDEZ LUIS FELIPE'),
+    ('7709344', 'QUINTERO RAMIREZ ANDRES MAURICIO'): ('7709344', 'QUINTERO RAMIREZ ANDRES MAURICIO'),
+    ('1014857021', 'MARTINEZ RODRIGUEZ DAIRON'): ('1014857021', 'MARTINEZ RODRIGUEZ DAIRON'),
+    ('1062804391', 'VIDES ALVAREZ ESTEBAN DAVID'): ('1062804391', 'VIDES ALVAREZ ESTEBAN DAVID')
+  };
+
+  function normalizarCedula(valor){
+    return String(valor ?? '').replace(/\\D/g, '');
+  }
+
+  function buscarPersonaPorCedula(valor){
+    return BD_PERSONAL[normalizarCedula(valor)] || '';
+  }
+
+  function actualizarNombrePorCedula(row){
+    const cedulaInput = row.querySelector('.p-cedula');
+    const nombreInput = row.querySelector('.p-nombre');
+    const status = row.querySelector('.cedula-status');
+    const cedula = normalizarCedula(cedulaInput.value);
+
+    // Dejamos siempre la cédula visualmente sin puntos.
+    if (cedulaInput.value !== cedula) {
+      cedulaInput.value = cedula;
+    }
+
+    if (!cedula) {
+      nombreInput.value = '';
+      nombreInput.readOnly = false;
+      nombreInput.classList.remove('autofilled');
+      status.textContent = '';
+      status.className = 'cedula-status';
+      return;
+    }
+
+    const nombre = buscarPersonaPorCedula(cedula);
+
+    if (nombre) {
+      nombreInput.value = nombre;
+      nombreInput.readOnly = true;
+      nombreInput.classList.add('autofilled');
+      status.textContent = '✓ Personal encontrado';
+      status.className = 'cedula-status ok';
+    } else {
+      nombreInput.readOnly = false;
+      nombreInput.classList.remove('autofilled');
+      status.textContent = 'Cédula no encontrada en la base. Ingresa el nombre manualmente.';
+      status.className = 'cedula-status warn';
+    }
+  }
+
   // ---- personnel stepper ----
   function renderPersonas(){
     const wrap = $('personasWrap');
@@ -849,17 +930,25 @@ header, .header, .topbar {
         <div class="persona-fields">
           <div>
             <label>Nombre <span class="req">*</span></label>
-            <input type="text" class="p-nombre" placeholder="Nombre completo" value="${escAttr(v.nombre)}">
+            <input type="text" class="p-nombre" placeholder="Se cargará automáticamente" value="${escAttr(v.nombre)}">
           </div>
-          <div>
+          <div class="cedula-wrap">
             <label>Cédula <span class="req">*</span></label>
-            <input type="text" class="p-cedula mono-input" inputmode="numeric" placeholder="N.° cédula" value="${escAttr(v.cedula)}">
+            <input type="text" class="p-cedula mono-input" inputmode="numeric" autocomplete="off" placeholder="N.° cédula" value="${escAttr(v.cedula)}">
+            <div class="cedula-status"></div>
           </div>
         </div>`;
       wrap.appendChild(row);
+      actualizarNombrePorCedula(row);
     }
     $('pCount').textContent = numPersonas;
   }
+  // Al diligenciar la cédula, busca automáticamente el nombre en la BD.
+  $('personasWrap').addEventListener('input', (e) => {
+    if (!e.target.classList.contains('p-cedula')) return;
+    actualizarNombrePorCedula(e.target.closest('.persona-row'));
+  });
+
   $('pMinus').addEventListener('click', () => { if (numPersonas > 1){ numPersonas--; renderPersonas(); } });
   $('pPlus').addEventListener('click', () => { if (numPersonas < 12){ numPersonas++; renderPersonas(); } });
   renderPersonas();
