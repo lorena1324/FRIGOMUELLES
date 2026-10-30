@@ -675,7 +675,7 @@ header, .header, .topbar {
 
     <div class="fgrid" style="margin-top:14px;">
       <div class="full">
-        <label for="observaciones">Observaiciones</label>
+        <label for="observaciones">Observaciones</label>
         <input type="text" id="observaciones" placeholder="Novedades de esta carga (opcional)">
       </div>
     </div>
@@ -828,7 +828,9 @@ header, .header, .topbar {
       toast(`Completa la hora de inicio y fin del ${nombre.toLowerCase()}`);
       return false;
     }
-    if (fin <= inicio) {
+    // El turno 3 (22:00–6:00) cruza la medianoche: ahí se acepta fin < inicio.
+    const cruzaMedianoche = turno && turno.num === '3' && fin < inicio;
+    if (fin === inicio || (fin < inicio && !cruzaMedianoche)) {
       toast(`La hora de fin del ${nombre.toLowerCase()} debe ser posterior a la de inicio`);
       return false;
     }
@@ -839,7 +841,6 @@ header, .header, .topbar {
   // Cédulas normalizadas: se guardan SIN puntos. También se aceptan
   // entradas con puntos, espacios o guiones porque se limpian automáticamente.
   const BD_PERSONAL = {
- ```
 "1106897655": "SOLANO FARFAN JARRYNS0N SMITH",
 "1070954659": "ZAMBRANO GUARNIZO DIEGO ARMANDO",
 "1074344615": "BARAJAS LOPEZ CRISTIAN DAVID",
@@ -869,7 +870,7 @@ header, .header, .topbar {
   };
 
   function normalizarCedula(valor){
-    return String(valor ?? '').replace(/\\D/g, '');
+    return String(valor ?? '').replace(/\D/g, '');
   }
 
   function buscarPersonaPorCedula(valor){
